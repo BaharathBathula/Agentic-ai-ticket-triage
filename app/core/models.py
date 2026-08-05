@@ -1,4 +1,8 @@
 from enum import Enum
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    version: str
 
 from pydantic import BaseModel, Field
 
