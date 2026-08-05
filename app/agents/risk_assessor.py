@@ -1,20 +1,40 @@
-from app.core.models import TicketCategory, TicketRequest, TicketSeverity
+from app.agents.base import BaseAgent
+from app.core.models import (
+    RiskAssessmentInput,
+    TicketCategory,
+    TicketRequest,
+    TicketSeverity,
+)
 
 
-class RiskAssessmentAgent:
+class RiskAssessmentAgent(
+    BaseAgent[RiskAssessmentInput, TicketSeverity]
+):
     """
     Determines the business severity of a support ticket.
     """
+
+    @property
+    def name(self) -> str:
+        return "risk_assessor"
+
+    def run(
+        self,
+        input_data: RiskAssessmentInput,
+    ) -> TicketSeverity:
+        return self.assess(
+            ticket=input_data.ticket,
+            category=input_data.category,
+        )
 
     def assess(
         self,
         ticket: TicketRequest,
         category: TicketCategory,
     ) -> TicketSeverity:
-
         text = f"{ticket.subject} {ticket.description}".lower()
 
-        critical_keywords = [
+        critical_keywords = (
             "all users",
             "production",
             "outage",
@@ -24,26 +44,26 @@ class RiskAssessmentAgent:
             "cannot access",
             "data loss",
             "security breach",
-        ]
+        )
 
-        high_keywords = [
+        high_keywords = (
             "multiple users",
             "slow",
             "latency",
             "authentication",
             "billing failure",
-        ]
+        )
 
-        low_keywords = [
+        low_keywords = (
             "feature request",
             "enhancement",
             "improvement",
-        ]
-
-        if any(keyword in text for keyword in critical_keywords):
-            return TicketSeverity.CRITICAL
+        )
 
         if category == TicketCategory.SECURITY:
+            return TicketSeverity.CRITICAL
+
+        if any(keyword in text for keyword in critical_keywords):
             return TicketSeverity.CRITICAL
 
         if any(keyword in text for keyword in high_keywords):
