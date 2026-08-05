@@ -2,7 +2,13 @@ from app.agents.classifier import ClassificationAgent
 from app.agents.resolution_agent import ResolutionAgent
 from app.agents.risk_assessor import RiskAssessmentAgent
 from app.core.memory import TicketMemory
-from app.core.models import TicketRequest, TriageResponse
+from app.core.models import (
+    ClassificationInput,
+    ResolutionInput,
+    RiskAssessmentInput,
+    TicketRequest,
+    TriageResponse,
+)
 
 
 class TriageOrchestrator:
@@ -26,19 +32,29 @@ class TriageOrchestrator:
     def triage(self, ticket: TicketRequest) -> TriageResponse:
         audit_trace: list[str] = []
 
-        category = self.classifier.classify(ticket)
-        audit_trace.append(f"classifier:{category.value}")
-
-        severity = self.risk_assessor.assess(
-            ticket=ticket,
-            category=category,
+        category = self.classifier.run(
+            ClassificationInput(ticket=ticket)
         )
-        audit_trace.append(f"risk_assessor:{severity.value}")
+        audit_trace.append(
+            f"{self.classifier.name}:{category.value}"
+        )
 
-        resolution = self.resolution_agent.resolve(
-            ticket=ticket,
-            category=category,
-            severity=severity,
+        severity = self.risk_assessor.run(
+            RiskAssessmentInput(
+                ticket=ticket,
+                category=category,
+            )
+        )
+        audit_trace.append(
+            f"{self.risk_assessor.name}:{severity.value}"
+        )
+
+        resolution = self.resolution_agent.run(
+            ResolutionInput(
+                ticket=ticket,
+                category=category,
+                severity=severity,
+            )
         )
 
         audit_trace.append(
@@ -54,7 +70,9 @@ class TriageOrchestrator:
             citation=resolution.citation,
         )
 
-        audit_trace.append(f"orchestrator:confidence={confidence}")
+        audit_trace.append(
+            f"orchestrator:confidence={confidence}"
+        )
 
         response = TriageResponse(
             ticket_id=ticket.ticket_id,
