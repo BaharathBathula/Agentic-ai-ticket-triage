@@ -18,27 +18,29 @@ A production-oriented multi-agent support ticket triage system demonstrating mod
 ## Architecture
 
 ```
-Incoming Ticket
-       │
-       ▼
- ┌──────────────┐
- │ Orchestrator │
- └──────┬───────┘
-        │
- ┌──────┼──────────────┐
- ▼      ▼              ▼
-Classifier  Risk Agent  Knowledge Tool
-        │
-        ▼
+Ticket
+   │
+   ▼
+FastAPI
+   │
+   ▼
+Orchestrator
+   │
+   ├──────────────┐
+   ▼              ▼
+Classifier    Risk Assessment
+   │              │
+   └──────┬───────┘
+          ▼
  Resolution Agent
-        │
-        ▼
+          │
+          ▼
+ Knowledge Search
+          │
+          ▼
  Guardrails
-        │
-        ▼
- Human Approval
-        │
-        ▼
+          │
+          ▼
  Final Response
 ```
 
