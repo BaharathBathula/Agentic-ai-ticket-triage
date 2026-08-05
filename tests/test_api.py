@@ -44,3 +44,36 @@ def test_triage_critical_availability_ticket() -> None:
     assert body["citations"] == ["KB-AVAILABILITY-001"]
     assert "classifier:availability" in body["audit_trace"]
     assert "risk_assessor:critical" in body["audit_trace"]
+
+def test_memory_endpoint_contains_saved_ticket() -> None:
+    client.post(
+        "/triage",
+        json={
+            "ticket_id": "MEM-1001",
+            "customer": "Test Customer",
+            "subject": "Production outage",
+            "description": "All users receive HTTP 503 errors.",
+            "channel": "email",
+        },
+    )
+
+    response = client.get("/memory")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert any(
+        ticket["ticket_id"] == "MEM-1001"
+        for ticket in body
+    )
+
+
+def test_memory_lookup_returns_saved_ticket() -> None:
+    response = client.get("/memory/MEM-1001")
+
+    assert response.status_code == 200
+
+    body = response.json()
+
+    assert body["ticket_id"] == "MEM-1001"
