@@ -6,10 +6,22 @@ from app.llm.provider import LLMProvider
 
 
 class OpenAIProvider(LLMProvider):
+    """
+    OpenAI Responses API provider.
 
-    def __init__(self):
+    The provider is considered available only when an API key exists.
+    """
 
-        self.api_key = os.getenv("OPENAI_API_KEY")
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+    ) -> None:
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.model = model or os.getenv(
+            "OPENAI_MODEL",
+            "gpt-4.1-mini",
+        )
 
         self.client = (
             OpenAI(api_key=self.api_key)
@@ -18,21 +30,25 @@ class OpenAIProvider(LLMProvider):
         )
 
     @property
-    def available(self):
-
+    def available(self) -> bool:
         return self.client is not None
 
-    def generate(
-        self,
-        prompt: str,
-    ) -> str:
+    def generate(self, prompt: str) -> str:
+        if self.client is None:
+            raise RuntimeError(
+                "OpenAI provider is not configured."
+            )
 
         response = self.client.responses.create(
-            model=os.getenv(
-                "OPENAI_MODEL",
-                "gpt-4.1-mini",
-            ),
+            model=self.model,
             input=prompt,
         )
 
-        return response.output_text
+        output = response.output_text.strip()
+
+        if not output:
+            raise RuntimeError(
+                "OpenAI returned an empty response."
+            )
+
+        return output
