@@ -1,0 +1,51 @@
+[
+  {
+    "id": "KB-AVAILABILITY-001",
+    "category": "availability",
+    "title": "Production service unavailable",
+    "keywords": ["503", "500", "outage", "down", "unavailable", "production"],
+    "recommended_action": "Check service health, recent deployments, infrastructure dependencies, logs, and rollback readiness. Escalate immediately when production access is blocked for multiple users."
+  },
+  {
+    "id": "KB-AUTH-001",
+    "category": "authentication",
+    "title": "User authentication failure",
+    "keywords": ["login", "password", "401", "403", "unauthorized", "authentication"],
+    "recommended_action": "Verify identity-provider availability, token expiration, user permissions, recent authentication changes, and account lockout status."
+  },
+  {
+    "id": "KB-BILLING-001",
+    "category": "billing",
+    "title": "Billing or payment issue",
+    "keywords": ["invoice", "payment", "refund", "billing", "subscription"],
+    "recommended_action": "Validate the invoice or transaction record, confirm payment-provider status, review account entitlements, and route refund requests for authorized human review."
+  },
+  {
+    "id": "KB-SECURITY-001",
+    "category": "security",
+    "title": "Potential security incident",
+    "keywords": ["breach", "attack", "vulnerability", "compromised", "security"],
+    "recommended_action": "Do not attempt automated remediation. Preserve evidence, restrict exposure when authorized, and immediately escalate to the security incident response team."
+  },
+  {
+    "id": "KB-DATA-001",
+    "category": "data_issue",
+    "title": "Missing, duplicate, or incorrect data",
+    "keywords": ["missing", "duplicate", "incorrect", "data", "record"],
+    "recommended_action": "Identify the affected records and source system, validate recent pipeline executions, compare source and destination counts, and avoid destructive corrections without approval."
+  },
+  {
+    "id": "KB-FEATURE-001",
+    "category": "feature_request",
+    "title": "Feature or enhancement request",
+    "keywords": ["feature", "enhancement", "improvement", "request"],
+    "recommended_action": "Capture the business problem, expected outcome, affected users, urgency, and acceptance criteria before routing the request to product review."
+  },
+  {
+    "id": "KB-GENERAL-001",
+    "category": "general",
+    "title": "General support investigation",
+    "keywords": [],
+    "recommended_action": "Collect reproducible steps, timestamps, affected users, screenshots or logs, environment details, and the expected versus actual behavior."
+  }
+]
