@@ -1,5 +1,6 @@
 import logging
 import time
+
 from app.agents.classifier import ClassificationAgent
 from app.agents.resolution_agent import ResolutionAgent
 from app.agents.risk_assessor import RiskAssessmentAgent
@@ -13,10 +14,13 @@ from app.core.models import (
 )
 
 
+logger = logging.getLogger("agents.orchestrator")
+
+
 class TriageOrchestrator:
     """
     Coordinates specialist agents, persists outcomes,
-    and produces the final triage result.
+    records execution timing, and produces the final triage result.
     """
 
     def __init__(
@@ -33,13 +37,28 @@ class TriageOrchestrator:
 
     def triage(self, ticket: TicketRequest) -> TriageResponse:
         audit_trace: list[str] = []
+        workflow_start = time.perf_counter()
+
+        classifier_start = time.perf_counter()
 
         category = self.classifier.run(
             ClassificationInput(ticket=ticket)
         )
+
+        classifier_duration_ms = round(
+            (time.perf_counter() - classifier_start) * 1000,
+            2,
+        )
+
         audit_trace.append(
             f"{self.classifier.name}:{category.value}"
         )
+        audit_trace.append(
+            f"{self.classifier.name}:duration_ms="
+            f"{classifier_duration_ms}"
+        )
+
+        risk_start = time.perf_counter()
 
         severity = self.risk_assessor.run(
             RiskAssessmentInput(
@@ -47,9 +66,21 @@ class TriageOrchestrator:
                 category=category,
             )
         )
+
+        risk_duration_ms = round(
+            (time.perf_counter() - risk_start) * 1000,
+            2,
+        )
+
         audit_trace.append(
             f"{self.risk_assessor.name}:{severity.value}"
         )
+        audit_trace.append(
+            f"{self.risk_assessor.name}:duration_ms="
+            f"{risk_duration_ms}"
+        )
+
+        resolution_start = time.perf_counter()
 
         resolution = self.resolution_agent.run(
             ResolutionInput(
@@ -59,6 +90,15 @@ class TriageOrchestrator:
             )
         )
 
+        resolution_duration_ms = round(
+            (time.perf_counter() - resolution_start) * 1000,
+            2,
+        )
+
+        audit_trace.append(
+            f"{self.resolution_agent.name}:duration_ms="
+            f"{resolution_duration_ms}"
+        )
         audit_trace.append(
             f"knowledge_search:{resolution.citation}"
         )
@@ -74,6 +114,15 @@ class TriageOrchestrator:
 
         audit_trace.append(
             f"orchestrator:confidence={confidence}"
+        )
+
+        workflow_duration_ms = round(
+            (time.perf_counter() - workflow_start) * 1000,
+            2,
+        )
+
+        audit_trace.append(
+            f"orchestrator:duration_ms={workflow_duration_ms}"
         )
 
         response = TriageResponse(
@@ -93,6 +142,17 @@ class TriageOrchestrator:
         self.memory.save(
             ticket=ticket,
             triage=response,
+        )
+
+        logger.info(
+            (
+                "triage_complete ticket_id=%s category=%s "
+                "severity=%s duration_ms=%s"
+            ),
+            ticket.ticket_id,
+            category.value,
+            severity.value,
+            workflow_duration_ms,
         )
 
         return response
