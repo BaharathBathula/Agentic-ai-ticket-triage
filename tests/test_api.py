@@ -13,8 +13,20 @@ def test_health_endpoint() -> None:
     assert response.json() == {
         "status": "healthy",
         "service": "agentic-ai-ticket-triage",
-        "version": "0.1.0",
+        "version": "1.1.0",
     }
+
+
+def test_health_endpoint_returns_request_id() -> None:
+    response = client.get(
+        "/health",
+        headers={
+            "X-Request-ID": "test-request-123",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == "test-request-123"
 
 
 def test_triage_critical_availability_ticket() -> None:
@@ -42,8 +54,27 @@ def test_triage_critical_availability_ticket() -> None:
     assert body["requires_human_approval"] is True
     assert body["status"] == "pending_human_approval"
     assert body["citations"] == ["KB-AVAILABILITY-001"]
+
     assert "classifier:availability" in body["audit_trace"]
     assert "risk_assessor:critical" in body["audit_trace"]
+
+    assert any(
+        item.startswith("classifier:duration_ms=")
+        for item in body["audit_trace"]
+    )
+    assert any(
+        item.startswith("risk_assessor:duration_ms=")
+        for item in body["audit_trace"]
+    )
+    assert any(
+        item.startswith("resolution_agent:duration_ms=")
+        for item in body["audit_trace"]
+    )
+    assert any(
+        item.startswith("orchestrator:duration_ms=")
+        for item in body["audit_trace"]
+    )
+
 
 def test_memory_endpoint_contains_saved_ticket() -> None:
     client.post(
@@ -70,10 +101,30 @@ def test_memory_endpoint_contains_saved_ticket() -> None:
 
 
 def test_memory_lookup_returns_saved_ticket() -> None:
-    response = client.get("/memory/MEM-1001")
+    client.post(
+        "/triage",
+        json={
+            "ticket_id": "MEM-1002",
+            "customer": "Test Customer",
+            "subject": "Production outage",
+            "description": "All users receive HTTP 503 errors.",
+            "channel": "email",
+        },
+    )
+
+    response = client.get("/memory/MEM-1002")
 
     assert response.status_code == 200
 
     body = response.json()
 
-    assert body["ticket_id"] == "MEM-1001"
+    assert body["ticket_id"] == "MEM-1002"
+
+
+def test_memory_lookup_returns_404_for_missing_ticket() -> None:
+    response = client.get("/memory/DOES-NOT-EXIST")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "detail": "Ticket not found.",
+    }
