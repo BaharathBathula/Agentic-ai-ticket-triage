@@ -1,11 +1,10 @@
 from enum import Enum
+
+from pydantic import BaseModel, Field
 class HealthResponse(BaseModel):
     status: str
     service: str
     version: str
-
-from pydantic import BaseModel, Field
-
 
 class TicketChannel(str, Enum):
     EMAIL = "email"
