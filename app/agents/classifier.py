@@ -1,68 +1,106 @@
-from app.core.models import TicketCategory, TicketRequest
+from app.agents.base import BaseAgent
+from app.core.models import (
+    ClassificationInput,
+    TicketCategory,
+    TicketRequest,
+)
 
 
-class ClassificationAgent:
+class ClassificationAgent(
+    BaseAgent[ClassificationInput, TicketCategory]
+):
     """
     Determines the category of a support ticket.
     """
 
-    def classify(self, ticket: TicketRequest) -> TicketCategory:
+    @property
+    def name(self) -> str:
+        return "classifier"
+
+    def run(
+        self,
+        input_data: ClassificationInput,
+    ) -> TicketCategory:
+        return self.classify(input_data.ticket)
+
+    def classify(
+        self,
+        ticket: TicketRequest,
+    ) -> TicketCategory:
         text = f"{ticket.subject} {ticket.description}".lower()
 
-        if any(word in text for word in [
-            "503",
-            "500",
-            "timeout",
-            "down",
-            "unavailable",
-            "outage",
-            "latency"
-        ]):
-            return TicketCategory.AVAILABILITY
+        category_keywords: list[
+            tuple[TicketCategory, tuple[str, ...]]
+        ] = [
+            (
+                TicketCategory.AVAILABILITY,
+                (
+                    "503",
+                    "500",
+                    "timeout",
+                    "down",
+                    "unavailable",
+                    "outage",
+                    "latency",
+                ),
+            ),
+            (
+                TicketCategory.AUTHENTICATION,
+                (
+                    "login",
+                    "password",
+                    "authentication",
+                    "sign in",
+                    "signin",
+                    "unauthorized",
+                    "401",
+                    "403",
+                ),
+            ),
+            (
+                TicketCategory.BILLING,
+                (
+                    "invoice",
+                    "payment",
+                    "billing",
+                    "subscription",
+                    "refund",
+                ),
+            ),
+            (
+                TicketCategory.SECURITY,
+                (
+                    "security",
+                    "breach",
+                    "hack",
+                    "vulnerability",
+                    "attack",
+                    "compromised",
+                ),
+            ),
+            (
+                TicketCategory.FEATURE_REQUEST,
+                (
+                    "feature",
+                    "enhancement",
+                    "request",
+                    "improvement",
+                ),
+            ),
+            (
+                TicketCategory.DATA_ISSUE,
+                (
+                    "incorrect",
+                    "missing",
+                    "duplicate",
+                    "data",
+                    "record",
+                ),
+            ),
+        ]
 
-        if any(word in text for word in [
-            "login",
-            "password",
-            "authentication",
-            "signin",
-            "unauthorized",
-            "401",
-            "403"
-        ]):
-            return TicketCategory.AUTHENTICATION
-
-        if any(word in text for word in [
-            "invoice",
-            "payment",
-            "billing",
-            "subscription",
-            "refund"
-        ]):
-            return TicketCategory.BILLING
-
-        if any(word in text for word in [
-            "security",
-            "breach",
-            "hack",
-            "vulnerability",
-            "attack"
-        ]):
-            return TicketCategory.SECURITY
-
-        if any(word in text for word in [
-            "feature",
-            "enhancement",
-            "request",
-            "improvement"
-        ]):
-            return TicketCategory.FEATURE_REQUEST
-
-        if any(word in text for word in [
-            "incorrect",
-            "missing",
-            "duplicate",
-            "data"
-        ]):
-            return TicketCategory.DATA_ISSUE
+        for category, keywords in category_keywords:
+            if any(keyword in text for keyword in keywords):
+                return category
 
         return TicketCategory.GENERAL
