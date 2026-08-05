@@ -117,6 +117,17 @@ Agentic-ai-ticket-triage/
   "channel": "portal"
 }
 ```
+## Engineering Highlights
+
+- Multi-agent orchestration using specialized agents
+- Deterministic fallback when no LLM is configured
+- Grounded recommendations with knowledge-base citations
+- Human-in-the-loop workflow for critical cases
+- Persistent SQLite memory
+- REST API with OpenAPI documentation
+- Dockerized deployment
+- GitHub Actions CI
+- Type-safe Pydantic models
 
 ## Example Response
 
