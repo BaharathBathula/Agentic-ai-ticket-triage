@@ -1,12 +1,14 @@
 from app.agents.classifier import ClassificationAgent
 from app.agents.resolution_agent import ResolutionAgent
 from app.agents.risk_assessor import RiskAssessmentAgent
+from app.core.memory import TicketMemory
 from app.core.models import TicketRequest, TriageResponse
 
 
 class TriageOrchestrator:
     """
-    Coordinates the specialist agents and produces the final triage result.
+    Coordinates specialist agents, persists outcomes,
+    and produces the final triage result.
     """
 
     def __init__(
@@ -14,10 +16,12 @@ class TriageOrchestrator:
         classifier: ClassificationAgent | None = None,
         risk_assessor: RiskAssessmentAgent | None = None,
         resolution_agent: ResolutionAgent | None = None,
+        memory: TicketMemory | None = None,
     ) -> None:
         self.classifier = classifier or ClassificationAgent()
         self.risk_assessor = risk_assessor or RiskAssessmentAgent()
         self.resolution_agent = resolution_agent or ResolutionAgent()
+        self.memory = memory or TicketMemory()
 
     def triage(self, ticket: TicketRequest) -> TriageResponse:
         audit_trace: list[str] = []
@@ -36,6 +40,7 @@ class TriageOrchestrator:
             category=category,
             severity=severity,
         )
+
         audit_trace.append(
             f"knowledge_search:{resolution.citation}"
         )
@@ -51,7 +56,7 @@ class TriageOrchestrator:
 
         audit_trace.append(f"orchestrator:confidence={confidence}")
 
-        return TriageResponse(
+        response = TriageResponse(
             ticket_id=ticket.ticket_id,
             category=category,
             severity=severity,
@@ -64,6 +69,13 @@ class TriageOrchestrator:
             citations=[resolution.citation],
             audit_trace=audit_trace,
         )
+
+        self.memory.save(
+            ticket=ticket,
+            triage=response,
+        )
+
+        return response
 
     @staticmethod
     def _calculate_confidence(
