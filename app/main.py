@@ -3,7 +3,10 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 
 from app.agents.orchestrator import TriageOrchestrator
+from app.core.config import settings
+from app.core.logging_config import configure_logging
 from app.core.memory import TicketMemory
+from app.core.middleware import RequestContextMiddleware
 from app.core.models import (
     HealthResponse,
     TicketRequest,
@@ -11,17 +14,22 @@ from app.core.models import (
 )
 
 
+configure_logging()
+
 app = FastAPI(
-    title="Agentic AI Ticket Triage",
+    title=settings.app_name,
     description=(
         "A multi-agent support ticket triage system with grounding, "
-        "guardrails, human approval, and persistent memory."
+        "guardrails, human approval, persistent memory, and optional "
+        "LLM classification."
     ),
-    version="0.1.0",
+    version=settings.app_version,
 )
 
-orchestrator = TriageOrchestrator()
+app.add_middleware(RequestContextMiddleware)
+
 memory = TicketMemory()
+orchestrator = TriageOrchestrator(memory=memory)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -29,7 +37,7 @@ def health_check() -> HealthResponse:
     return HealthResponse(
         status="healthy",
         service="agentic-ai-ticket-triage",
-        version="0.1.0",
+        version=settings.app_version,
     )
 
 
