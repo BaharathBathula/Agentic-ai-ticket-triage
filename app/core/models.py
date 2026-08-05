@@ -32,20 +32,7 @@ class TicketSeverity(str, Enum):
     HIGH = "high"
     CRITICAL = "critical"
 
-class ClassificationInput(BaseModel):
-    ticket: TicketRequest
 
-
-class RiskAssessmentInput(BaseModel):
-    ticket: TicketRequest
-    category: TicketCategory
-
-
-class ResolutionInput(BaseModel):
-    ticket: TicketRequest
-    category: TicketCategory
-    severity: TicketSeverity
-    
 class TriageStatus(str, Enum):
     RESOLVED = "resolved"
     RECOMMENDATION_READY = "recommendation_ready"
@@ -76,6 +63,21 @@ class TicketRequest(BaseModel):
         ],
     )
     channel: TicketChannel = TicketChannel.EMAIL
+
+
+class ClassificationInput(BaseModel):
+    ticket: TicketRequest
+
+
+class RiskAssessmentInput(BaseModel):
+    ticket: TicketRequest
+    category: TicketCategory
+
+
+class ResolutionInput(BaseModel):
+    ticket: TicketRequest
+    category: TicketCategory
+    severity: TicketSeverity
 
 
 class TriageResponse(BaseModel):
