@@ -3,6 +3,7 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from app.core.config import settings
 from app.core.models import TicketRequest, TriageResponse
 
 
@@ -11,11 +12,19 @@ class TicketMemory:
     Persists ticket triage outcomes in SQLite.
     """
 
-    def __init__(self, database_path: Path | None = None) -> None:
-        self.database_path = (
+    def __init__(
+        self,
+        database_path: Path | str | None = None,
+    ) -> None:
+        configured_path = (
             database_path
-            or Path(__file__).resolve().parents[2] / "data" / "tickets.db"
+            or settings.database_path
+            or Path(__file__).resolve().parents[2]
+            / "data"
+            / "tickets.db"
         )
+
+        self.database_path = Path(configured_path)
 
         self.database_path.parent.mkdir(
             parents=True,
@@ -25,7 +34,10 @@ class TicketMemory:
         self._initialize_database()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.database_path)
+        connection = sqlite3.connect(
+            self.database_path,
+            timeout=10,
+        )
         connection.row_factory = sqlite3.Row
         return connection
 
@@ -94,7 +106,10 @@ class TicketMemory:
                 ),
             )
 
-    def get(self, ticket_id: str) -> dict[str, Any] | None:
+    def get(
+        self,
+        ticket_id: str,
+    ) -> dict[str, Any] | None:
         with self._connect() as connection:
             row = connection.execute(
                 """
@@ -108,16 +123,14 @@ class TicketMemory:
         if row is None:
             return None
 
-        result = dict(row)
-        result["requires_human_approval"] = bool(
-            result["requires_human_approval"]
-        )
-        result["citations"] = json.loads(result["citations"])
-        result["audit_trace"] = json.loads(result["audit_trace"])
+        return self._deserialize_row(row)
 
-        return result
+    def list_recent(
+        self,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        safe_limit = max(1, min(limit, 100))
 
-    def list_recent(self, limit: int = 20) -> list[dict[str, Any]]:
         with self._connect() as connection:
             rows = connection.execute(
                 """
@@ -126,18 +139,28 @@ class TicketMemory:
                 ORDER BY created_at DESC
                 LIMIT ?
                 """,
-                (limit,),
+                (safe_limit,),
             ).fetchall()
 
-        results: list[dict[str, Any]] = []
+        return [
+            self._deserialize_row(row)
+            for row in rows
+        ]
 
-        for row in rows:
-            item = dict(row)
-            item["requires_human_approval"] = bool(
-                item["requires_human_approval"]
-            )
-            item["citations"] = json.loads(item["citations"])
-            item["audit_trace"] = json.loads(item["audit_trace"])
-            results.append(item)
+    @staticmethod
+    def _deserialize_row(
+        row: sqlite3.Row,
+    ) -> dict[str, Any]:
+        result = dict(row)
 
-        return results
+        result["requires_human_approval"] = bool(
+            result["requires_human_approval"]
+        )
+        result["citations"] = json.loads(
+            result["citations"]
+        )
+        result["audit_trace"] = json.loads(
+            result["audit_trace"]
+        )
+
+        return result
