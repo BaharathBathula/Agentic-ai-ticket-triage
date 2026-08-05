@@ -1,7 +1,6 @@
-import os
-
 from openai import OpenAI
 
+from app.core.config import settings
 from app.llm.provider import LLMProvider
 
 
@@ -9,7 +8,7 @@ class OpenAIProvider(LLMProvider):
     """
     OpenAI Responses API provider.
 
-    The provider is considered available only when an API key exists.
+    The provider is available only when an API key is configured.
     """
 
     def __init__(
@@ -17,11 +16,8 @@ class OpenAIProvider(LLMProvider):
         api_key: str | None = None,
         model: str | None = None,
     ) -> None:
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv(
-            "OPENAI_MODEL",
-            "gpt-4.1-mini",
-        )
+        self.api_key = api_key or settings.openai_api_key
+        self.model = model or settings.openai_model
 
         self.client = (
             OpenAI(api_key=self.api_key)
