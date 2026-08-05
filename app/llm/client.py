@@ -2,36 +2,37 @@ import os
 
 from openai import OpenAI
 
+from app.llm.provider import LLMProvider
 
-class LLMClient:
-    """
-    Wrapper around an OpenAI-compatible API.
-    """
 
-    def __init__(self) -> None:
-        self.enabled = bool(os.getenv("OPENAI_API_KEY"))
+class OpenAIProvider(LLMProvider):
 
-        if self.enabled:
-            self.client = OpenAI(
-                api_key=os.getenv("OPENAI_API_KEY"),
-            )
+    def __init__(self):
 
-    def is_enabled(self) -> bool:
-        return self.enabled
+        self.api_key = os.getenv("OPENAI_API_KEY")
 
-    def chat(self, prompt: str) -> str:
-        if not self.enabled:
-            raise RuntimeError("LLM is not configured.")
-
-        response = self.client.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
-            temperature=0,
+        self.client = (
+            OpenAI(api_key=self.api_key)
+            if self.api_key
+            else None
         )
 
-        return response.choices[0].message.content
+    @property
+    def available(self):
+
+        return self.client is not None
+
+    def generate(
+        self,
+        prompt: str,
+    ) -> str:
+
+        response = self.client.responses.create(
+            model=os.getenv(
+                "OPENAI_MODEL",
+                "gpt-4.1-mini",
+            ),
+            input=prompt,
+        )
+
+        return response.output_text
