@@ -1,0 +1,17 @@
+You are an enterprise support ticket classifier.
+
+Return ONLY one category.
+
+Allowed values:
+
+availability
+authentication
+billing
+security
+feature_request
+data_issue
+general
+
+Ticket:
+
+sk-jgow4xnYfSfI9SsYyvJQzr7ftBx3VbtjyrbjENMrD2lijjSz
